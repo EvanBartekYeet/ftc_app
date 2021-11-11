@@ -40,6 +40,7 @@ public class GudCode extends LinearOpMode {
     private double rightJoy_x;
     private double deadzone;
     private boolean y_flag;
+    private boolean x_flag;
 
     private enum ClawPosition
     {
@@ -112,6 +113,15 @@ public class GudCode extends LinearOpMode {
                 larry.setPower(0);
             }
 
+            if (this.gamepad1.x && x_flag){
+                MoveClaw(currentPosition);
+                x_flag = false;
+            }
+            else if (!this.gamepad1.x && !x_flag)
+            {
+                x_flag = true;
+            }
+
             if (this.gamepad1.y && y_flag)
             {
                 if (currentPosition == ClawPosition.START)
@@ -126,7 +136,7 @@ public class GudCode extends LinearOpMode {
                 {
                     currentPosition = ClawPosition.DOWN;
                 }
-                MoveClaw(currentPosition);
+
                 y_flag = false;
             }
 
