@@ -38,7 +38,7 @@ public class GudCode extends LinearOpMode {
     private double rightJoy_y;
     private double leftJoy_x;
     private double rightJoy_x;
-
+    private double deadzone;
     private boolean y_flag;
 
     private enum ClawPosition
@@ -48,21 +48,11 @@ public class GudCode extends LinearOpMode {
 
     ClawPosition currentPosition = ClawPosition.START;
 
-//#################WARNING:EVERYTHING BELOW THIS POINT IS DEATH #####3
-
     private static final String VUFORIA_KEY =
             "AbskhHb/////AAABmb8nKWBiYUJ9oEFmxQL9H2kC6M9FzPa1acXUaS/H5wRkeNbpNVBJjDfcrhlTV2SIGc/lxBOtq9X7doE2acyeVOPg4sP69PQQmDVQH5h62IwL8x7BS/udilLU7MyX3KEoaFN+eR1o4FKBspsYrIXA/Oth+TUyrXuAcc6bKSSblICUpDXCeUbj17KrhghgcgxU6wzl84lCDoz6IJ9egO+CG4HlsBhC/YAo0zzi82/BIUMjBLgFMc63fc6eGTGiqjCfrQPtRWHdj2sXHtsjZr9/BpLDvFwFK36vSYkRoSZCZ38Fr+g3nkdep25+oEsmx30IkTYvQVMFZKpK3WWMYUWjWgEzOSvhh+3BOg+3UoxBJSNk";
 
-    private VuforiaLocalizer vuforia;
-
-    private TFObjectDetector tfod;
-
     @Override
     public void runOpMode() throws InterruptedException {
-        // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
-        // first.
-        //initVuforia();
-        //initTfod();
 
         // Hardware mapping
         bob = hardwareMap.get(DcMotorEx.class, "front_left_motor");
@@ -71,14 +61,6 @@ public class GudCode extends LinearOpMode {
         jerry = hardwareMap.get(DcMotorEx.class, "back_right_motor");
         barry = hardwareMap.get(DcMotorEx.class, "swing_arm_motor");
         garry = hardwareMap.get(Servo.class, "wrist_joint");
-
-        /*
-        if (tfod != null) {
-            tfod.activate();
-
-            tfod.setZoom(2, 16.0/9.0);
-        }
-        */
 
         // Wait for the game to begin
         telemetry.addData(">", "Press Play to start op mode");
@@ -92,48 +74,6 @@ public class GudCode extends LinearOpMode {
         barry.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
-
-        /*
-        if (opModeIsActive()) {
-            for(int i=0; i < 4000; i++)
-            {
-                if (tfod != null) {
-                    // getUpdatedRecognitions() will return null if no new information is available since
-                    // the last time that call was made.
-                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
-                    if (updatedRecognitions != null) {
-                        telemetry.addData("# Object Detected", updatedRecognitions.size());
-
-                        // step through the list of recognitions and display boundary info.
-                        i = 0;
-                        for (Recognition recognition : updatedRecognitions) {
-                            telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                            telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-                                    recognition.getLeft(), recognition.getTop());
-                            telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                    recognition.getRight(), recognition.getBottom());
-
-                            if (recognition.getLabel().equals(LABEL_FIRST_ELEMENT)) {
-                                tfod.shutdown();
-                            }
-
-                            else if (recognition.getLabel().equals(LABEL_SECOND_ELEMENT)) {
-                                tfod.shutdown();
-                            }
-
-                            else {
-                            }
-                            telemetry.update();
-                        }
-                    }
-                }
-            }
-
-            if (tfod != null) {
-                tfod.shutdown();
-            }
-        }
-        */
 
         while (opModeIsActive())
         {
@@ -154,10 +94,23 @@ public class GudCode extends LinearOpMode {
             telemetry.addData("Left stick X", leftJoy_x);
             telemetry.addData("Left stick Y", leftJoy_y);
 
-            TurnPlaces(leftJoy_x, leftJoy_y, calculatedSpeed());
-
-            drivePlaces(calculatedDirection(rightJoy_x, rightJoy_y), calculatedSpeed());
-
+            if (JoyIsActive("left"))
+            {
+                TurnPlaces(leftJoy_x, leftJoy_y, calculatedSpeed("left"));
+                telemetry.addData("Turny things", 0);
+            }
+            else if (JoyIsActive("right"))
+            {
+                DrivePlaces(calculatedDirection(rightJoy_x, rightJoy_y), calculatedSpeed("right"));
+                telemetry.addData("Drivy things", 0);
+            }
+            else
+            {
+                dylan.setPower(0);
+                jerry.setPower(0);
+                bob.setPower(0);
+                larry.setPower(0);
+            }
 
             if (this.gamepad1.y && y_flag)
             {
@@ -188,7 +141,7 @@ public class GudCode extends LinearOpMode {
 
     }
 
-    private void drivePlaces (String direction, double speed)
+    private void DrivePlaces (String direction, double speed)
     {
         switch (direction)
         {
@@ -265,28 +218,36 @@ public class GudCode extends LinearOpMode {
             speed = -speed;
         }
 
-        telemetry.addData("Speed: ", speed);
+        telemetry.addData("It should be turning", leftJoy_x);
 
-        if (leftJoy_x > 0)
+        if(leftJoy_x > 0)
         {
-            dylan.setPower(speed * Math.abs(leftJoy_y));
-            jerry.setPower(speed * Math.abs(leftJoy_y));
+            dylan.setPower(speed * Math.abs(leftJoy_x / 2));
+            jerry.setPower(speed * Math.abs(leftJoy_x / 2));
             bob.setPower(speed);
             larry.setPower(speed);
         }
-        else if (leftJoy_x < 0)
+        else if(leftJoy_x < 0)
         {
             dylan.setPower(speed);
             jerry.setPower(speed);
-            bob.setPower(speed * Math.abs(leftJoy_y));
-            larry.setPower(speed * Math.abs(leftJoy_y));
+            bob.setPower(speed * Math.abs(leftJoy_x / 2));
+            larry.setPower(speed * Math.abs(leftJoy_x / 2));
         }
+        else
+        {
+            dylan.setPower(speed);
+            jerry.setPower(speed);
+            bob.setPower(speed);
+            larry.setPower(speed);
+        }
+
     }
 
     private String calculatedDirection (double rightJoy_x, double rightJoy_y)
     {
         String directionToTravel;
-        
+
         if (rightJoy_x > Math.cos(1.96) && rightJoy_x < Math.cos(1.18) && rightJoy_y > 0)
         {
             directionToTravel = "FORWARD"; // Forwards direction
@@ -323,13 +284,13 @@ public class GudCode extends LinearOpMode {
         {
             directionToTravel = "STOP";
         }
-        
+
         telemetry.addData("Check Direction: ", directionToTravel);
 
         return directionToTravel;
     }
 
-    private double calculatedSpeed()
+    private double calculatedSpeed(String joyStick)
     {
         double speed;
 
@@ -339,17 +300,15 @@ public class GudCode extends LinearOpMode {
         double lx = this.gamepad1.left_stick_x;
         double ly = -this.gamepad1.left_stick_y;
 
-        // Calculate distance from joystick to center
-        double speedRight = Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)) * 0.75;
-        double speedLeft = Math.sqrt(Math.pow(lx, 2) + Math.pow(ly, 2)) * 0.75;
+        joyStick.toLowerCase();
 
-        if (speedRight > speedLeft)
+        if (joyStick == "right")
         {
-            speed = speedRight;
+            speed = Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2)) * 0.75;;
         }
-        else if(speedLeft > speedRight)
+        else if(joyStick == "left")
         {
-            speed = speedLeft;
+            speed = Math.sqrt(Math.pow(lx, 2) + Math.pow(ly, 2)) * 0.75;;
         }
         else
         {
@@ -357,6 +316,42 @@ public class GudCode extends LinearOpMode {
         }
 
         return speed;
+    }
+
+    private boolean JoyIsActive (String joyStick)
+    {
+        boolean isActive = false;
+        double rx = this.gamepad1.right_stick_x;
+        double ry = -this.gamepad1.right_stick_y;
+        double lx = this.gamepad1.left_stick_x;
+        double ly = -this.gamepad1.left_stick_y;
+
+        joyStick.toLowerCase();
+
+        if (joyStick == "right")
+        {
+            if (Math.abs(rx) > deadzone || Math.abs(ry) > deadzone)
+            {
+                isActive = true;
+            }
+            else
+            {
+                isActive = false;
+            }
+        }
+        else if (joyStick == "left")
+        {
+            if (Math.abs(lx) > deadzone || Math.abs(ly) > deadzone)
+            {
+                isActive = true;
+            }
+            else
+            {
+                isActive = false;
+            }
+        }
+
+        return isActive;
     }
 
     private void MoveClaw (Enum position)
@@ -395,27 +390,5 @@ public class GudCode extends LinearOpMode {
             barry.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             garry.setPosition(0.25);
         }
-
-        else
-        {
-            return;
-        }
     }
-
-    private void initVuforia() {
-
-        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
-        parameters.vuforiaLicenseKey = VUFORIA_KEY;
-
-        //  Instantiate the Vuforia engine
-        vuforia = ClassFactory.getInstance().createVuforia(parameters);
-
-        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
-    }
-
-
-
-
-
 }
