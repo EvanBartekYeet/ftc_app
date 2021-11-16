@@ -113,17 +113,10 @@ public class GudCode extends LinearOpMode {
                 larry.setPower(0);
             }
 
-            if (this.gamepad1.x && x_flag){
-                MoveClaw(currentPosition);
-                x_flag = false;
-            }
-            else if (!this.gamepad1.x && !x_flag)
-            {
-                x_flag = true;
-            }
 
             if (this.gamepad1.y && y_flag)
             {
+                MoveClaw(currentPosition);
                 if (currentPosition == ClawPosition.START)
                 {
                     currentPosition = ClawPosition.DOWN;
@@ -375,7 +368,7 @@ public class GudCode extends LinearOpMode {
 
             // Move the things
             barry.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            garry.setPosition(0.25);
+            //garry.setPosition(0.25);
         }
 
         // Code move claw to pickup position
@@ -387,7 +380,7 @@ public class GudCode extends LinearOpMode {
 
             // Move the things
             barry.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            garry.setPosition(0.5);
+            //garry.setPosition(0.5);
         }
 
         else if (position == ClawPosition.UP)
@@ -398,7 +391,7 @@ public class GudCode extends LinearOpMode {
 
             // Move the things
             barry.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            garry.setPosition(0.25);
+            //garry.setPosition(0.25);
         }
     }
 }
